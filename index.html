@@ -1,0 +1,251 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cowboys AC Technician Pay Sheet</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f8f9fa;
+      color: #333;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    header img {
+      height: 60px;
+    }
+    .note {
+      font-size: 0.9em;
+      color: #666;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 15px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    select, input {
+      padding: 5px;
+    }
+    .btn {
+      padding: 10px 15px;
+      background: #0069d9;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .btn:hover {
+      background: #0056b3;
+    }
+    #footer {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8em;
+      color: #555;
+      margin-top: 20px;
+    }
+    #summary {
+      margin-top: 30px;
+    }
+    #summary table {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="Cowboys AC Logo">
+  <div>
+    <label for="employee">Employee:</label>
+    <select id="employee">
+      <option>Employee 1</option>
+      <option>Employee 2</option>
+      <option>Employee 3</option>
+      <option>Employee 4</option>
+      <option>Employee 5</option>
+      <option>Employee 6</option>
+      <option>Employee 7</option>
+      <option>Employee 8</option>
+      <option>Employee 9</option>
+      <option>Employee 10</option>
+    </select>
+    <div id="date"></div>
+  </div>
+</header>
+
+<div class="note">
+  A 5% installer cost is automatically added to base job cost to cover support, travel, insurance, and company overhead.
+</div>
+
+<input type="file" id="costFile" accept=".json" />
+<table id="payTable">
+  <thead>
+    <tr>
+      <th>Job #</th>
+      <th>Customer Name</th>
+      <th>Start Time</th>
+      <th>End Time</th>
+      <th>Total Hours</th>
+      <th>Sold Price</th>
+      <th>Job Cost</th>
+      <th>Profit %</th>
+      <th>Commission</th>
+    </tr>
+  </thead>
+  <tbody id="payBody"></tbody>
+</table>
+
+<button class="btn" onclick="addRow()">Add Job</button>
+<button class="btn" onclick="clearRows()">Clear All Jobs</button>
+<button class="btn" onclick="generatePDF()">Export Pay Sheet PDF</button>
+<button class="btn" onclick="viewSummary()">View Weekly Summary</button>
+
+<div id="summary"></div>
+
+<div id="footer">
+  <div>&copy; 2025 Cowboys AC</div>
+  <div>All Rights Reserved</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<script>
+  const date = new Date();
+  document.getElementById('date').innerText = date.toLocaleDateString();
+  let jobCosts = {};
+
+  document.getElementById('costFile').addEventListener('change', function (e) {
+    const reader = new FileReader();
+    reader.onload = function () {
+      jobCosts = JSON.parse(reader.result);
+      alert('Job cost file loaded.');
+    };
+    reader.readAsText(e.target.files[0]);
+  });
+
+  function addRow() {
+    const tbody = document.getElementById('payBody');
+    const row = tbody.insertRow();
+    for (let i = 0; i < 9; i++) row.insertCell();
+    row.cells[0].innerHTML = `<input type="text" onchange="recalcRow(this)">`;
+    row.cells[1].innerHTML = `<input type="text">`;
+    row.cells[2].innerHTML = `<input type="time" onchange="recalcRow(this)">`;
+    row.cells[3].innerHTML = `<input type="time" onchange="recalcRow(this)">`;
+    row.cells[4].innerText = '0';
+    row.cells[5].innerHTML = `<input type="number" onchange="recalcRow(this)">`;
+    row.cells[6].innerText = '-';
+    row.cells[7].innerText = '-';
+    row.cells[8].innerText = '-';
+  }
+
+  function clearRows() {
+    document.getElementById('payBody').innerHTML = '';
+    document.getElementById('summary').innerHTML = '';
+  }
+
+  function recalcRow(input) {
+    const row = input.parentElement.parentElement;
+    const start = row.cells[2].querySelector('input').value;
+    const end = row.cells[3].querySelector('input').value;
+    const job = row.cells[0].querySelector('input').value.trim();
+    const sold = parseFloat(row.cells[5].querySelector('input').value || 0);
+
+    if (start && end) {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
+      row.cells[4].innerText = hours.toFixed(2);
+    }
+
+    if (job && jobCosts[job]) {
+      const baseCost = jobCosts[job];
+      const cost = baseCost * 1.05;
+      const profit = sold - cost;
+      const margin = (profit / sold) * 100;
+      const rate = margin >= 58 ? 0.10 : 0.05;
+      const commission = profit * rate;
+      row.cells[6].innerText = cost.toFixed(2);
+      row.cells[7].innerText = margin.toFixed(1) + '%';
+      row.cells[8].innerText = '$' + commission.toFixed(2);
+    }
+  }
+
+  function viewSummary() {
+    const tbody = document.getElementById('payBody');
+    const rows = tbody.rows;
+    let totalHours = 0, totalJobs = 0, totalSold = 0, totalCost = 0, totalProfit = 0, totalCommission = 0;
+    let summaryHTML = '<h3>Weekly Summary</h3><table border="1"><tr><th>Job #</th><th>Sold</th><th>Base Cost</th><th>+5%</th><th>Profit</th><th>Margin</th><th>Rate</th><th>Commission</th></tr>';
+
+    for (let row of rows) {
+      const job = row.cells[0].querySelector('input').value.trim();
+      const sold = parseFloat(row.cells[5].querySelector('input').value || 0);
+      const baseCost = jobCosts[job] || 0;
+      const cost = baseCost * 1.05;
+      const profit = sold - cost;
+      const margin = (profit / sold) * 100;
+      const rate = margin >= 58 ? 0.10 : 0.05;
+      const commission = profit * rate;
+
+      totalHours += parseFloat(row.cells[4].innerText || 0);
+      totalSold += sold;
+      totalCost += cost;
+      totalProfit += profit;
+      totalCommission += commission;
+      totalJobs++;
+
+      summaryHTML += `<tr><td>${job}</td><td>$${sold.toFixed(2)}</td><td>$${baseCost.toFixed(2)}</td><td>$${cost.toFixed(2)}</td><td>$${profit.toFixed(2)}</td><td>${margin.toFixed(1)}%</td><td>${(rate * 100).toFixed(0)}%</td><td>$${commission.toFixed(2)}</td></tr>`;
+    }
+
+    summaryHTML += `</table><p><strong>Total Jobs:</strong> ${totalJobs} | <strong>Total Hours:</strong> ${totalHours.toFixed(2)} | <strong>Total Commission:</strong> $${totalCommission.toFixed(2)}</p>`;
+    summaryHTML += `<p><em>Verified by Home Office — Final commission paid reflects job profitability and company installer policy.</em></p>`;
+    document.getElementById('summary').innerHTML = summaryHTML;
+  }
+
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("Technician Pay Sheet – Cowboys AC", 14, 20);
+    doc.setFontSize(10);
+    const employee = document.getElementById('employee').value;
+    doc.text(`Employee: ${employee}`, 14, 30);
+    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 30);
+
+    const rows = [];
+    const tbody = document.getElementById('payBody');
+    for (let row of tbody.rows) {
+      const r = [];
+      for (let i = 0; i < row.cells.length; i++) {
+        r.push(row.cells[i].innerText || row.cells[i].querySelector('input')?.value || '');
+      }
+      rows.push(r);
+    }
+
+    doc.autoTable({
+      head: [["Job #", "Customer", "Start", "End", "Hours", "Sold $", "Cost $", "Profit %", "Commission"]],
+      body: rows,
+      startY: 40
+    });
+
+    doc.save("technician-pay-sheet.pdf");
+  }
+</script>
+</body>
+</html>
