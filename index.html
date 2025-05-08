@@ -4,248 +4,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cowboys AC Technician Pay Sheet</title>
+  <title>Cowboys AC Job Breakdown</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f8f9fa;
-      color: #333;
-    }
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    header img {
-      height: 60px;
-    }
-    .note {
-      font-size: 0.9em;
-      color: #666;
-      margin-bottom: 20px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 15px;
-    }
-    table, th, td {
-      border: 1px solid #ccc;
-    }
-    th, td {
-      padding: 8px;
-      text-align: center;
-    }
-    select, input {
-      padding: 5px;
-    }
-    .btn {
-      padding: 10px 15px;
-      background: #0069d9;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      margin-right: 10px;
-    }
-    .btn:hover {
-      background: #0056b3;
-    }
-    #footer {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8em;
-      color: #555;
-      margin-top: 20px;
-    }
-    #summary {
-      margin-top: 30px;
-    }
-    #summary table {
-      margin-top: 10px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+    h2 { text-align: center; }
+    label { display: block; margin-top: 10px; }
+    input, select { padding: 5px; width: 100%; max-width: 300px; }
+    .section { background: #fff; padding: 15px; margin-top: 20px; border-radius: 8px; box-shadow: 0 0 5px rgba(0,0,0,0.1); }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; }
+    .col { flex: 1; min-width: 250px; }
+    .btn { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-top: 20px; }
+    .btn:hover { background: #0056b3; }
   </style>
 </head>
 <body>
 
-<header>
-  <img src="logo.png" alt="Cowboys AC Logo">
-  <div>
-    <label for="employee">Employee:</label>
-    <select id="employee">
-      <option>Employee 1</option>
-      <option>Employee 2</option>
-      <option>Employee 3</option>
-      <option>Employee 4</option>
-      <option>Employee 5</option>
-      <option>Employee 6</option>
-      <option>Employee 7</option>
-      <option>Employee 8</option>
-      <option>Employee 9</option>
-      <option>Employee 10</option>
-    </select>
-    <div id="date"></div>
+<img src="logo.png" alt="Cowboys AC Logo" style="height: 60px; margin-bottom: 20px;">
+
+<h2>Job Breakdown Form</h2>
+
+<div class="section">
+  <div class="row">
+    <div class="col">
+      <label>Technician</label>
+      <select id="technician">
+        <option>Employee 1</option>
+        <option>Employee 2</option>
+        <option>Employee 3</option>
+        <option>Employee 4</option>
+        <option>Employee 5</option>
+      </select>
+    </div>
+    <div class="col">
+      <label>Invoice #</label>
+      <input type="text" id="invoice">
+    </div>
   </div>
-</header>
-
-<div class="note">
-  A 5% installer cost is automatically added to base job cost to cover support, travel, insurance, and company overhead.
+  <div class="row">
+    <div class="col"><label>Customer Name</label><input type="text" id="customer"></div>
+    <div class="col"><label>Address</label><input type="text" id="address"></div>
+    <div class="col"><label>City</label><input type="text" id="city"></div>
+    <div class="col"><label>State</label><input type="text" id="state"></div>
+  </div>
 </div>
 
-<input type="file" id="costFile" accept=".json" />
-<table id="payTable">
-  <thead>
-    <tr>
-      <th>Job #</th>
-      <th>Customer Name</th>
-      <th>Start Time</th>
-      <th>End Time</th>
-      <th>Total Hours</th>
-      <th>Sold Price</th>
-      <th>Job Cost</th>
-      <th>Profit %</th>
-      <th>Commission</th>
-    </tr>
-  </thead>
-  <tbody id="payBody"></tbody>
-</table>
-
-<button class="btn" onclick="addRow()">Add Job</button>
-<button class="btn" onclick="clearRows()">Clear All Jobs</button>
-<button class="btn" onclick="generatePDF()">Export Pay Sheet PDF</button>
-<button class="btn" onclick="viewSummary()">View Weekly Summary</button>
-
-<div id="summary"></div>
-
-<div id="footer">
-  <div>&copy; 2025 Cowboys AC</div>
-  <div>All Rights Reserved</div>
+<div class="section">
+  <h3>Job Cost</h3>
+  <div class="row">
+    <div class="col"><label>Book Price</label><input type="number" id="bookPrice"></div>
+    <div class="col"><label>Sold Price</label><input type="number" id="soldPrice" oninput="calculateAll()"></div>
+  </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+<div class="section">
+  <h3>Method of Payment</h3>
+  <div class="row">
+    <div class="col">
+      <select id="paymentMethod" onchange="calculateAll()">
+        <option value="0">Cash (0%)</option>
+        <option value="0">Financed (0%)</option>
+        <option value="0.03">Credit Card (3%)</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Office Expenses</h3>
+  <div class="row">
+    <div class="col"><label>Finance Charges</label><input type="number" id="financeCharge" oninput="calculateAll()"></div>
+    <div class="col"><label>Installer Cost</label><input type="number" id="installerCost" oninput="calculateAll()"></div>
+    <div class="col"><label>Permit</label><input type="number" id="permitCost" oninput="calculateAll()"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Material Costs</h3>
+  <div class="row">
+    <div class="col"><label>Supplier 1</label><input type="number" id="supplier1" oninput="calculateAll()"></div>
+    <div class="col"><label>Supplier 2</label><input type="number" id="supplier2" oninput="calculateAll()"></div>
+    <div class="col"><label>Supplier 3</label><input type="number" id="supplier3" oninput="calculateAll()"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>Results</h3>
+  <div id="results"></div>
+</div>
+
 <script>
-  const date = new Date();
-  document.getElementById('date').innerText = date.toLocaleDateString();
-  let jobCosts = {};
+function calculateAll() {
+  const sold = parseFloat(document.getElementById("soldPrice").value) || 0;
+  const methodFee = parseFloat(document.getElementById("paymentMethod").value) || 0;
+  const finance = parseFloat(document.getElementById("financeCharge").value) || 0;
+  const installer = parseFloat(document.getElementById("installerCost").value) || 0;
+  const permit = parseFloat(document.getElementById("permitCost").value) || 0;
 
-  document.getElementById('costFile').addEventListener('change', function (e) {
-    const reader = new FileReader();
-    reader.onload = function () {
-      jobCosts = JSON.parse(reader.result);
-      alert('Job cost file loaded.');
-    };
-    reader.readAsText(e.target.files[0]);
-  });
+  const mat1 = parseFloat(document.getElementById("supplier1").value) || 0;
+  const mat2 = parseFloat(document.getElementById("supplier2").value) || 0;
+  const mat3 = parseFloat(document.getElementById("supplier3").value) || 0;
+  const materialTotal = mat1 + mat2 + mat3;
 
-  function addRow() {
-    const tbody = document.getElementById('payBody');
-    const row = tbody.insertRow();
-    for (let i = 0; i < 9; i++) row.insertCell();
-    row.cells[0].innerHTML = `<input type="text" onchange="recalcRow(this)">`;
-    row.cells[1].innerHTML = `<input type="text">`;
-    row.cells[2].innerHTML = `<input type="time" onchange="recalcRow(this)">`;
-    row.cells[3].innerHTML = `<input type="time" onchange="recalcRow(this)">`;
-    row.cells[4].innerText = '0';
-    row.cells[5].innerHTML = `<input type="number" onchange="recalcRow(this)">`;
-    row.cells[6].innerText = '-';
-    row.cells[7].innerText = '-';
-    row.cells[8].innerText = '-';
-  }
+  const office5Percent = sold * 0.05;
+  const officeTotal = finance + installer + permit + office5Percent;
 
-  function clearRows() {
-    document.getElementById('payBody').innerHTML = '';
-    document.getElementById('summary').innerHTML = '';
-  }
+  const rawProfit = sold - materialTotal;
+  const margin = (rawProfit / sold) * 100;
+  const commissionRate = margin >= 58 ? 0.10 : 0.05;
+  const commission = rawProfit * commissionRate;
 
-  function recalcRow(input) {
-    const row = input.parentElement.parentElement;
-    const start = row.cells[2].querySelector('input').value;
-    const end = row.cells[3].querySelector('input').value;
-    const job = row.cells[0].querySelector('input').value.trim();
-    const sold = parseFloat(row.cells[5].querySelector('input').value || 0);
+  const finalProfit = rawProfit - commission - officeTotal - (sold * methodFee);
 
-    if (start && end) {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const hours = ((eh * 60 + em) - (sh * 60 + sm)) / 60;
-      row.cells[4].innerText = hours.toFixed(2);
-    }
-
-    if (job && jobCosts[job]) {
-      const baseCost = jobCosts[job];
-      const cost = baseCost * 1.05;
-      const profit = sold - cost;
-      const margin = (profit / sold) * 100;
-      const rate = margin >= 58 ? 0.10 : 0.05;
-      const commission = profit * rate;
-      row.cells[6].innerText = cost.toFixed(2);
-      row.cells[7].innerText = margin.toFixed(1) + '%';
-      row.cells[8].innerText = '$' + commission.toFixed(2);
-    }
-  }
-
-  function viewSummary() {
-    const tbody = document.getElementById('payBody');
-    const rows = tbody.rows;
-    let totalHours = 0, totalJobs = 0, totalSold = 0, totalCost = 0, totalProfit = 0, totalCommission = 0;
-    let summaryHTML = '<h3>Weekly Summary</h3><table border="1"><tr><th>Job #</th><th>Sold</th><th>Base Cost</th><th>+5%</th><th>Profit</th><th>Margin</th><th>Rate</th><th>Commission</th></tr>';
-
-    for (let row of rows) {
-      const job = row.cells[0].querySelector('input').value.trim();
-      const sold = parseFloat(row.cells[5].querySelector('input').value || 0);
-      const baseCost = jobCosts[job] || 0;
-      const cost = baseCost * 1.05;
-      const profit = sold - cost;
-      const margin = (profit / sold) * 100;
-      const rate = margin >= 58 ? 0.10 : 0.05;
-      const commission = profit * rate;
-
-      totalHours += parseFloat(row.cells[4].innerText || 0);
-      totalSold += sold;
-      totalCost += cost;
-      totalProfit += profit;
-      totalCommission += commission;
-      totalJobs++;
-
-      summaryHTML += `<tr><td>${job}</td><td>$${sold.toFixed(2)}</td><td>$${baseCost.toFixed(2)}</td><td>$${cost.toFixed(2)}</td><td>$${profit.toFixed(2)}</td><td>${margin.toFixed(1)}%</td><td>${(rate * 100).toFixed(0)}%</td><td>$${commission.toFixed(2)}</td></tr>`;
-    }
-
-    summaryHTML += `</table><p><strong>Total Jobs:</strong> ${totalJobs} | <strong>Total Hours:</strong> ${totalHours.toFixed(2)} | <strong>Total Commission:</strong> $${totalCommission.toFixed(2)}</p>`;
-    summaryHTML += `<p><em>Verified by Home Office — Final commission paid reflects job profitability and company installer policy.</em></p>`;
-    document.getElementById('summary').innerHTML = summaryHTML;
-  }
-
-  function generatePDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text("Technician Pay Sheet – Cowboys AC", 14, 20);
-    doc.setFontSize(10);
-    const employee = document.getElementById('employee').value;
-    doc.text(`Employee: ${employee}`, 14, 30);
-    doc.text(`Date: ${new Date().toLocaleDateString()}`, 150, 30);
-
-    const rows = [];
-    const tbody = document.getElementById('payBody');
-    for (let row of tbody.rows) {
-      const r = [];
-      for (let i = 0; i < row.cells.length; i++) {
-        r.push(row.cells[i].innerText || row.cells[i].querySelector('input')?.value || '');
-      }
-      rows.push(r);
-    }
-
-    doc.autoTable({
-      head: [["Job #", "Customer", "Start", "End", "Hours", "Sold $", "Cost $", "Profit %", "Commission"]],
-      body: rows,
-      startY: 40
-    });
-
-    doc.save("technician-pay-sheet.pdf");
-  }
+  document.getElementById("results").innerHTML = `
+    <p><strong>Total Material Cost:</strong> $${materialTotal.toFixed(2)}</p>
+    <p><strong>Office Expenses (+5% overhead):</strong> $${officeTotal.toFixed(2)}</p>
+    <p><strong>Profit Before Commission:</strong> $${rawProfit.toFixed(2)}</p>
+    <p><strong>Commission (${(commissionRate*100).toFixed(0)}%):</strong> $${commission.toFixed(2)}</p>
+    <p><strong>Payment Fee:</strong> $${(sold * methodFee).toFixed(2)}</p>
+    <h3>Final Profit After All Expenses: $${finalProfit.toFixed(2)}</h3>
+  `;
+}
 </script>
+
 </body>
 </html>
