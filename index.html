@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cowboys AC Job Breakdown</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body { font-family: Arial; background: #f4f4f4; margin: 0; padding: 0; }
+    header, footer {
+      background: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    footer {
+      justify-content: center;
+      font-size: 0.9em;
+      margin-top: 40px;
+    }
+    main { padding: 20px; }
+    h2 { text-align: center; margin-top: 20px; }
+    .section {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+    }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; }
+    .col { flex: 1; min-width: 220px; }
+    .btn {
+      background: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #invoicePreview canvas {
+      width: 100px;
+      height: auto;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="Cowboys AC Logo" style="height: 50px;">
+  <div id="date"></div>
+</header>
+
+<main>
+  <h2>Cowboys AC – Job Breakdown</h2>
+
+  <div class="section">
+    <label>Upload Invoice PDF (for reference only)</label>
+    <input type="file" id="invoiceUpload" accept="application/pdf" />
+    <div id="invoicePreview" style="display: flex; flex-wrap: wrap; margin-top: 15px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="row">
+      <div class="col"><label>Technician</label>
+        <select id="technician">
+          <option>Employee 1</option><option>Employee 2</option><option>Employee 3</option>
+          <option>Employee 4</option><option>Employee 5</option>
+        </select>
+      </div>
+      <div class="col"><label>Invoice #</label><input type="text" id="invoice"></div>
+      <div class="col"><label>Customer Name</label><input type="text" id="customer"></div>
+      <div class="col"><label>Address</label><input type="text" id="address"></div>
+      <div class="col"><label>City</label><input type="text" id="city"></div>
+      <div class="col"><label>State</label><input type="text" id="state"></div>
+    </div>
+  </div>
+  <div class="section">
+    <h3>Job & Cost Info</h3>
+    <div class="row">
+      <div class="col"><label>Book Price</label><input type="number" id="bookPrice"></div>
+      <div class="col"><label>Sold Price</label><input type="number" id="soldPrice" oninput="calculateAll()"></div>
+      <div class="col"><label>Payment Method</label>
+        <select id="paymentMethod" onchange="calculateAll()">
+          <option value="0">Cash (0%)</option>
+          <option value="0">Financed (0%)</option>
+          <option value="0.033">Credit Card (3.3%)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Office Expenses</h3>
+    <div class="row">
+      <div class="col"><label>Finance Charges</label><input type="number" id="financeCharge" oninput="calculateAll()"></div>
+      <div class="col"><label>Installer Cost</label><input type="number" id="installerCost" oninput="calculateAll()"></div>
+      <div class="col"><label>Permit</label><input type="number" id="permitCost" oninput="calculateAll()"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Material Costs</h3>
+    <div class="row">
+      <div class="col"><label>Supplier 1</label><input type="number" id="supplier1" oninput="calculateAll()"></div>
+      <div class="col"><label>Supplier 2</label><input type="number" id="supplier2" oninput="calculateAll()"></div>
+      <div class="col"><label>Supplier 3</label><input type="number" id="supplier3" oninput="calculateAll()"></div>
+    </div>
+  </div>
+
+  <div class="section" id="results"></div>
+  <button class="btn" onclick="generatePDF()">Generate Breakdown PDF</button>
+</main>
+<footer>
+  &copy; 2025 Cowboys AC – All Rights Reserved
+</footer>
+
+<script>
+  document.getElementById("date").innerText = new Date().toLocaleString();
+
+  function calculateAll() {
+    const sold = parseFloat(document.getElementById("soldPrice").value) || 0;
+    const methodFee = parseFloat(document.getElementById("paymentMethod").value) || 0;
+    const finance = parseFloat(document.getElementById("financeCharge").value) || 0;
+    const installer = parseFloat(document.getElementById("installerCost").value) || 0;
+    const permit = parseFloat(document.getElementById("permitCost").value) || 0;
+    const mat1 = parseFloat(document.getElementById("supplier1").value) || 0;
+    const mat2 = parseFloat(document.getElementById("supplier2").value) || 0;
+    const mat3 = parseFloat(document.getElementById("supplier3").value) || 0;
+
+    const materialTotal = mat1 + mat2 + mat3;
+    const paymentFee = sold * methodFee;
+    const overhead5 = sold * 0.05;
+    const officeTotal = finance + installer + permit + paymentFee + overhead5;
+
+    const totalCost = materialTotal + officeTotal;
+    const profit = sold - totalCost;
+    const margin = (profit / sold) * 100;
+    const commissionRate = margin >= 58 ? 0.10 : 0.05;
+    const commission = profit * commissionRate;
+    const finalProfit = profit - commission;
+
+    document.getElementById("results").innerHTML = `
+      <p><strong>Material Total:</strong> $${materialTotal.toFixed(2)}</p>
+      <p><strong>Office Total (incl. 5% overhead & payment fee):</strong> $${officeTotal.toFixed(2)}</p>
+      <p><strong>Total Cost:</strong> $${totalCost.toFixed(2)}</p>
+      <p><strong>Profit:</strong> $${profit.toFixed(2)}</p>
+      <p><strong>Margin:</strong> ${margin.toFixed(2)}%</p>
+      <p><strong>Commission (${(commissionRate*100).toFixed(0)}%):</strong> $${commission.toFixed(2)}</p>
+      <p><strong>Final Profit:</strong> $${finalProfit.toFixed(2)}</p>
+    `;
+  }
+
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Cowboys AC Job Breakdown", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 140, 20);
+
+    const rows = [];
+    document.getElementById("results").querySelectorAll("p").forEach(p => {
+      rows.push([p.innerText]);
+    });
+
+    doc.autoTable({
+      startY: 30,
+      head: [['Summary']],
+      body: rows,
+      styles: { fontSize: 10 }
+    });
+
+    doc.setFontSize(9);
+    doc.text("© 2025 Cowboys AC – All Rights Reserved", 14, 285);
+    doc.save("CowboysAC_Breakdown.pdf");
+  }
+
+  document.getElementById('invoiceUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const previewContainer = document.getElementById('invoicePreview');
+    previewContainer.innerHTML = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function() {
+      const typedarray = new Uint8Array(this.result);
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
+        for (let i = 1; i <= Math.min(pdf.numPages, 3); i++) {
+          pdf.getPage(i).then(page => {
+            const scale = 0.4;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement("canvas");
+            const context = canvas.getContext("2d");
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            page.render({ canvasContext: context, viewport: viewport });
+            previewContainer.appendChild(canvas);
+          });
+        }
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  });
+</script>
+
+</body>
+</html>
