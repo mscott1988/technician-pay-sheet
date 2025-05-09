@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cowboys AC Job Breakdown</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.14.305/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    body { font-family: Arial; margin: 0; background: #f4f4f4; padding: 20px; }
+    header, footer {
+      background: #fff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    footer {
+      justify-content: center;
+      font-size: 0.9em;
+      margin-top: 40px;
+    }
+    h2 { text-align: center; margin: 20px 0; }
+    .section {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.05);
+    }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 20px; }
+    .col { flex: 1; min-width: 220px; }
+    .btn {
+      background: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <img src="logo.png" alt="Cowboys AC Logo" style="height: 50px;">
+  <div id="date"></div>
+</header>
+
+<h2>Cowboys AC – Job Breakdown</h2>
+
+<div class="section">
+  <label>Upload HouseCall Pro Invoice (PDF)</label>
+  <input type="file" id="invoiceUpload" accept="application/pdf" />
+  <button class="btn" onclick="populateFields()">Submit Invoice Data</button>
+</div>
+
+<div class="section">
+  <div class="row">
+    <div class="col"><label>Technician</label>
+      <select id="technician">
+        <option>Employee 1</option><option>Employee 2</option><option>Employee 3</option>
+        <option>Employee 4</option><option>Employee 5</option>
+      </select>
+    </div>
+    <div class="col"><label>Invoice #</label><input type="text" id="invoice"></div>
+    <div class="col"><label>Customer Name</label><input type="text" id="customer"></div>
+    <div class="col"><label>Address</label><input type="text" id="address"></div>
+    <div class="col"><label>City</label><input type="text" id="city"></div>
+    <div class="col"><label>State</label><input type="text" id="state"></div>
+    <div class="col"><label>Sold Price</label><input type="number" id="soldPrice" step="0.01" oninput="calculateAll()"></div>
+    <div class="col"><label>Payment Method</label>
+      <select id="paymentMethod" onchange
+<div class="section" id="results"></div>
+<button class="btn" onclick="generatePDF()">Generate Breakdown PDF</button>
+
+<footer>
+  &copy; 2025 Cowboys AC – All Rights Reserved
+</footer>
+
+<script>
+  document.getElementById("date").innerText = new Date().toLocaleString();
+
+  let extractedData = {};
+
+  document.getElementById('invoiceUpload').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function() {
+      const typedarray = new Uint8Array(this.result);
+      pdfjsLib.getDocument({ data: typedarray }).promise.then(pdf => {
+        pdf.getPage(1).then(page => {
+          page.getTextContent().then(content => {
+            const text = content.items.map(item => item.str).join(' ');
+            const find = (pattern) => (text.match(pattern) || [])[1] || '';
+
+            extractedData.invoice = find(/INVOICE #(\d+)/i);
+            extractedData.customer = find(/Customer Name ([A-Z][a-z]+ [A-Z][a-z]+)/);
+            const sold = find(/Invoice Amount \$([\d,\.]+)/);
+            extractedData.soldPrice = sold ? sold.replace(/,/g, '') : '';
+            const addressMatch = text.match(/\d+\s+[^,]+(?:Drive|Street|Rd|Blvd)/i);
+            extractedData.address = addressMatch ? addressMatch[0] : '';
+            if (text.includes("San Antonio, TX")) {
+              extractedData.city = "San Antonio";
+              extractedData.state = "TX";
+            }
+            if (text.includes("Service Finance")) {
+              extractedData.paymentMethod = "0";
+            } else if (text.includes("Credit Card")) {
+              extractedData.paymentMethod = "0.033";
+            }
+            alert("Invoice data extracted. Click Submit to populate fields.");
+          });
+        });
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function populateFields() {
+    for (const key in extractedData) {
+      if (document.getElementById(key)) {
+        document.getElementById(key).value = extractedData[key];
+      }
+    }
+    calculateAll();
+  }
+
+  function calculateAll() {
+    const sold = parseFloat(document.getElementById("soldPrice").value) || 0;
+    const methodFee = parseFloat(document.getElementById("paymentMethod").value) || 0;
+    const office5 = sold * 0.05;
+    const paymentFee = sold * methodFee;
+    const totalCost = office5 + paymentFee;
+    const profit = sold - totalCost;
+    const margin = (profit / sold) * 100;
+    const commissionRate = margin >= 58 ? 0.10 : 0.05;
+    const commission = profit * commissionRate;
+    const finalProfit = profit - commission;
+
+    document.getElementById("results").innerHTML = `
+      <div><strong>Sold Price:</strong> $${sold.toFixed(2)}</div>
+      <div><strong>Office Overhead (5%):</strong> $${office5.toFixed(2)}</div>
+      <div><strong>Payment Method Fee:</strong> $${paymentFee.toFixed(2)}</div>
+      <div><strong>Total Cost:</strong> $${totalCost.toFixed(2)}</div>
+      <div><strong>Profit Before Commission:</strong> $${profit.toFixed(2)}</div>
+      <div><strong>Margin:</strong> ${margin.toFixed(2)}%</div>
+      <div><strong>Commission (${(commissionRate * 100)}%):</strong> $${commission.toFixed(2)}</div>
+      <div><strong>Final Profit:</strong> $${finalProfit.toFixed(2)}</div>
+    `;
+  }
+
+  function generatePDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Cowboys AC Job Breakdown", 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 140, 20);
+
+    const rows = [];
+    const resultEl = document.getElementById("results");
+    if (resultEl) {
+      resultEl.querySelectorAll("div").forEach(d => {
+        rows.push([d.innerText]);
+      });
+    }
+
+    doc.autoTable({
+      startY: 30,
+      head: [['Summary']],
+      body: rows,
+      styles: { fontSize: 10 }
+    });
+
+    doc.setFontSize(9);
+    doc.text("© 2025 Cowboys AC – All Rights Reserved", 14, 285);
+    doc.save("CowboysAC_Breakdown.pdf");
+  }
+</script>
+
+</body>
+</html>
